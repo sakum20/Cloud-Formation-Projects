@@ -1,0 +1,45 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Template to deploy security group
+  
+Parameters:
+   VpcId: 
+      Type: AWS::EC2::VPC::Id
+      Description: VPC to provision the template
+   EnvironmentType:
+      Type: String
+      Description: Environment Type
+      AllowedValues:
+         - PreProd 
+         - Prod 
+      Default: "PreProd"
+   AppId:
+     Type: String 
+     Description: Application id 
+     Default: "1"
+     MaxLength: 5
+     
+Assertions:
+   - Assert: !Not [!Equals [!Ref AppId, ""]]
+     AssertDescription: AppId is required 
+
+Conditions:
+   isPreProd: !Equals [!Ref EnvironmentType, PreProd]
+   isProd: !Equals [!Ref EnvironmentType, Prod]
+
+Resources:
+  InstanceSecurityGroup:
+  Type: AWS::EC2::SecurityGroup
+  Properties:
+    GroupDescription: !Sub SecurityGroup-${VpcId}-${AppId}-${EnvironmentType}-sg
+    VpcId: !Ref VpcId
+    SecurityGroupIngress:
+      - IpProtocol: tcp
+        FromPort: 80
+        ToPort: 80
+        CidrIp: 172.31.0.0/16
+    SecurityGroupEgress:
+      - IpProtocol: tcp
+        FromPort: 80
+        ToPort: 80
+        CidrIp: 0.0.0.0/0
+  
