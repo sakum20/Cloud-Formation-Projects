@@ -1,0 +1,112 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Template to create KMS Key 
+  
+Parameters:
+   Enabled: 
+      Type: String
+      Description: State of KMS key
+      Default: True
+      AllowedValues:
+         - True
+         - False 
+   EnableKeyRotation:
+      Type: String
+      Default: False 
+   Origin:
+     Type: String
+     AllowedValues:
+        - AWS_KMS
+        - EXTERNAL
+   AppId:
+     Type: String 
+     Description: Application id 
+     Default: "2"
+     MaxLength: 20
+   EnvironmentType:
+      Type: String
+      Description: Environment Type
+      AllowedValues:
+         - PreProd 
+         - Prod 
+      Default: "PreProd"
+    
+Conditions:
+   isPreProd: !Equals [!Ref EnvironmentType, PreProd]
+  
+Resources:
+   MyKMSKey:
+      Type: AWS::KMS::Key
+      Properties:
+         Description: !Sub KMSKey-${AppId}-${EnvironmentType}-kms
+         MultiRegion: False 
+         EnableKeyRotation: !Ref EnableKeyRotation
+         Enabled: !Ref Enabled
+         KeySpec: SYMMETRIC_DEFAULT
+         KeyUsage: ENCRYPT_DECRYPT
+         Origin: !Ref Origin
+         KeyPolicy:
+               Id: key-consolepolicy-3
+               Version: '2012-10-17'
+               Statement:
+               - Sid: Enable IAM User Permissions
+                 Effect: Allow
+                 Principal:
+                   AWS: arn:aws:iam::058264224083:root
+                 Action: kms:*
+                 Resource: "*"
+               - Sid: Allow access for Key Administrators
+                 Effect: Allow
+                 Principal:
+                   AWS: arn:aws:iam::058264224083:user/sathish-developer
+                 Action:
+                 - kms:Create*
+                 - kms:Describe*
+                 - kms:Enable*
+                 - kms:List*
+                 - kms:Put*
+                 - kms:Update*
+                 - kms:Revoke*
+                 - kms:Disable*
+                 - kms:Get*
+                 - kms:Delete*
+                 - kms:TagResource
+                 - kms:UntagResource
+                 - kms:ScheduleKeyDeletion
+                 - kms:CancelKeyDeletion
+                 - kms:RotateKeyOnDemand
+                 Resource: "*"
+               - Sid: Allow use of the key
+                 Effect: Allow
+                 Principal:
+                   AWS: arn:aws:iam::058264224083:user/sathish-developer
+                 Action:
+                 - kms:Encrypt
+                 - kms:Decrypt
+                 - kms:ReEncrypt*
+                 - kms:GenerateDataKey*
+                 - kms:DescribeKey
+                 Resource: "*"
+               - Sid: Allow attachment of persistent resources
+                 Effect: Allow
+                 Principal:
+                   AWS: arn:aws:iam::058264224083:user/sathish-developer
+                 Action:
+                 - kms:CreateGrant
+                 - kms:ListGrants
+                 - kms:RevokeGrant
+                 Resource: "*"
+                 Condition:
+                   Bool:
+                     kms:GrantIsForAWSResource: 'true'
+         Tags:
+            - Key: AppId
+              Value: !Ref AppId 
+            - Key: EnvironmentType
+              Value: !Ref EnvironmentType
+      Condition: isPreProd
+  
+Outputs:
+   KeyId: 
+      Description: Created Key ID 
+      Value: !Ref MyKMSKey
+
